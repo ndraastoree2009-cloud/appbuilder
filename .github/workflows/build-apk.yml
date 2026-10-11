@@ -1,0 +1,118 @@
+name: Build APK
+run-name: build ${{ inputs.order_id }}
+
+# Dipicu oleh situs lewat API (workflow_dispatch). Jangan jalankan manual kecuali untuk uji coba.
+on:
+  workflow_dispatch:
+    inputs:
+      order_id:
+        description: ID pesanan (16 hex huruf besar)
+        required: true
+        type: string
+      app_name:
+        description: Nama aplikasi
+        required: true
+        type: string
+      app_url:
+        description: Alamat situs (https)
+        required: true
+        type: string
+      package_name:
+        description: Package name, contoh app.w2a.contoh
+        required: true
+        type: string
+      theme_color:
+        description: Warna tema #RRGGBB
+        required: true
+        type: string
+      icon_url:
+        description: Tautan ikon (opsional)
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-${{ inputs.order_id }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Semua input lewat env, tidak pernah disisipkan langsung ke perintah shell.
+    env:
+      ORDER_ID: ${{ inputs.order_id }}
+      APP_NAME: ${{ inputs.app_name }}
+      APP_URL: ${{ inputs.app_url }}
+      PACKAGE_NAME: ${{ inputs.package_name }}
+      THEME_COLOR: ${{ inputs.theme_color }}
+      ICON_URL: ${{ inputs.icon_url }}
+      SITE_URL: ${{ secrets.SITE_URL }}
+      BUILD_SECRET: ${{ secrets.BUILD_SECRET }}
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Periksa ID pesanan
+        run: |
+          [[ "$ORDER_ID" =~ ^[0-9A-F]{16}$ ]] || { echo "ORDER_ID tidak valid"; exit 1; }
+
+      - name: Lapor mulai
+        run: builder/scripts/notify.sh building
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Pasang Pillow
+        run: pip install --quiet pillow
+
+      - name: Siapkan proyek (nama, alamat, warna, ikon)
+        run: python builder/scripts/prepare.py
+
+      - name: Siapkan keystore rilis (opsional)
+        if: env.KEYSTORE_BASE64 != ''
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Build APK
+        working-directory: builder/android
+        run: gradle --no-daemon --stacktrace assembleRelease -PappId="$PACKAGE_NAME"
+
+      - name: Buat release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          APK=$(find builder/android/app/build/outputs/apk/release -name '*.apk' | head -n 1)
+          test -f "$APK"
+          mkdir -p dist
+          cp "$APK" "dist/$APK_NAME"
+          gh release delete "order-$ORDER_ID" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "order-$ORDER_ID" "dist/$APK_NAME" \
+            --title "order-$ORDER_ID" --notes "APK untuk pesanan $ORDER_ID" --target "$GITHUB_SHA"
+
+      - name: Lapor selesai
+        run: builder/scripts/notify.sh done
+
+      - name: Lapor gagal
+        if: failure()
+        run: builder/scripts/notify.sh failed "Build gagal, lihat log di $RUN_URL"
