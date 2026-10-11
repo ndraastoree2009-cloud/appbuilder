@@ -1,0 +1,38 @@
+# ---- Wajib ----
+# Rahasia penanda sesi (minimal 16 karakter acak). Buat: openssl rand -hex 24
+SESSION_SECRET=
+
+# Login admin. Mengganti password ini otomatis mencabut semua sesi admin.
+ADMIN_USERNAME=
+ADMIN_PASSWORD=
+
+# Redis (Upstash lewat Vercel Marketplace, atau Vercel KV)
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+# atau: KV_REST_API_URL= dan KV_REST_API_TOKEN=
+
+# JayaPay (https://jaya-pay.vercel.app/docs): API key dari dashboard JayaPay
+JAYAPAY_API_KEY=
+
+# Build APK lewat GitHub Actions
+# Repo PRIVATE berisi proyek ini, format pemilik/nama-repo
+GH_REPO=
+# Fine-grained token untuk repo itu: Actions = Read and write, Contents = Read and write
+GH_TOKEN=
+# Rahasia callback build. Nilai yang sama harus dipasang sebagai secret BUILD_SECRET di GitHub.
+# Buat: openssl rand -hex 24
+BUILD_SECRET=
+
+# Alamat situs ini tanpa garis miring akhir, mis. https://apkin.vercel.app
+# Dipakai runner GitHub untuk mengambil ikon dan mengirim callback.
+SITE_URL=
+
+# ---- Opsional ----
+# Nama dan harga awal sebelum admin mengubahnya di panel
+SITE_NAME=Web2APK
+DEFAULT_PRICE=25000
+# Ganti bila JayaPay dipasang di domain lain
+JAYAPAY_BASE_URL=https://jaya-pay.vercel.app
+# Nama file workflow dan cabang yang dijalankan
+GH_WORKFLOW=build-apk.yml
+GH_REF=main

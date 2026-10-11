@@ -1,0 +1,12 @@
+node_modules
+.vercel
+.env
+.env.*
+!.env.example
+.gradle
+local.properties
+builder/android/app/build
+builder/android/build
+builder/android/app/src/main/res/values/app_config.xml
+builder/android/app/src/main/res/mipmap-*
+dist

@@ -1,1 +1,12 @@
-{ "name": "premium-store", "version": "1.0.0", "main": "server.cjs", "scripts": { "start": "node server.cjs" }, "engines": { "node": ">=18" }, "license": "MIT", "type": "commonjs" }
+{
+  "name": "web2apk-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Situs konversi website ke APK: akun user, panel admin, bayar dulu lewat JayaPay QRIS Fast, build lewat GitHub Actions.",
+  "license": "MIT",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "test": "node test/run.js",
+    "demo": "node test/ui-server.js"
+  }
+}
