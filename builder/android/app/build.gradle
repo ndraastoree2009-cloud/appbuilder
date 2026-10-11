@@ -1,0 +1,52 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+// applicationId diberikan workflow: gradle assembleRelease -PappId=app.w2a.contoh
+def appId = (project.findProperty('appId') ?: 'app.w2a.sample').toString()
+// Tanda tangan rilis opsional dari env; tanpa itu APK ditandatangani dengan kunci debug (tetap bisa dipasang).
+def ksPath = System.getenv('KEYSTORE_PATH')
+
+android {
+    namespace 'app.web2apk.shell'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId appId
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+    signingConfigs {
+        release {
+            if (ksPath) {
+                storeFile file(ksPath)
+                storePassword System.getenv('KEYSTORE_PASSWORD')
+                keyAlias System.getenv('KEY_ALIAS')
+                keyPassword System.getenv('KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig ksPath ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
